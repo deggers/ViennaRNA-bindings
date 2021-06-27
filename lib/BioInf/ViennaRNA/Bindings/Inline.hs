@@ -19,7 +19,7 @@ type Energy = Int
 
 C.context (C.baseCtx <> C.bsCtx)
 C.include "../C/ViennaRNA/hairpin_loops.h" -- Energy evaluation of hairpin loops for MFE and partition function calculations
-C.include "../C/ViennaRNA/interior_loop.h" -- Energy evaluation of interior loops for MFE and partition function calculations.
+C.include "../C/ViennaRNA/interior_loops.h" -- Energy evaluation of interior loops for MFE and partition function calculations.
 C.include "../C/ViennaRNA/fold.h"
 
 -- | Create a default fold compound.
