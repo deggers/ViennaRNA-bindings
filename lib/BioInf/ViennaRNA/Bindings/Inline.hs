@@ -5,6 +5,7 @@
 
 module BioInf.ViennaRNA.Bindings.Inline where
 
+import Data.Monoid
 import Data.ByteString.Char8 as BS
 import qualified Language.C.Inline as C
 import Foreign.C.Types
@@ -14,10 +15,11 @@ import qualified Data.ByteString.Internal as BI
 import Foreign.ForeignPtr.Unsafe
 
 
+type Energy = Int
 
 C.context (C.baseCtx <> C.bsCtx)
-C.include "../C/ViennaRNA/hairpin_loops.h"
-C.include "../C/ViennaRNA/interior_loops.h"
+C.include "../C/ViennaRNA/hairpin_loops.h" -- Energy evaluation of hairpin loops for MFE and partition function calculations
+C.include "../C/ViennaRNA/interior_loop.h" -- Energy evaluation of interior loops for MFE and partition function calculations.
 C.include "../C/ViennaRNA/fold.h"
 
 -- | Create a default fold compound.
@@ -67,12 +69,12 @@ mfe inp = unsafePerformIO $ do
 
 -- | Calculate the energy of the sequence, assuming that it forms a hairpin.
 
-hairpin :: BS.ByteString -> Int
+hairpin :: BS.ByteString -> Energy
 hairpin inp = hairpinP inp 0 (fromIntegral $ BS.length inp -1)
 
 -- | Given some sequence, calculate the hairpin energy for the left and right position.
 
-hairpinP :: BS.ByteString -> Int -> Int -> Int
+hairpinP :: BS.ByteString -> Int -> Int -> Energy
 hairpinP inp i j = unsafePerformIO $ do
   c <- mkFoldCompound inp
   let !e = hairpinCP c i j
@@ -82,7 +84,7 @@ hairpinP inp i j = unsafePerformIO $ do
 -- | Low-level function that assumes a fold compound and returns the hairpin energy between the two
 -- indices.
 
-hairpinCP :: Ptr () -> Int -> Int -> Int
+hairpinCP :: Ptr () -> Int -> Int -> Energy
 hairpinCP c (fromIntegral -> i) (fromIntegral -> j) = unsafePerformIO $ do
   e <- [C.block| int {
     vrna_fold_compound_t * c = $(void *c);
@@ -90,13 +92,20 @@ hairpinCP c (fromIntegral -> i) (fromIntegral -> j) = unsafePerformIO $ do
   } |]
   return $ fromIntegral e
 
-test_interior_loops :: BS.ByteString -> Int -> Int -> Int -> Int -> Int
-test_interior_loops inp (fromIntegral -> i) (fromIntegral -> j) (fromIntegral -> k) (fromIntegral -> l) = unsafePerformIO $ do
-  cp <- mkFoldCompound inp
-  e <- [C.block| int {
-    vrna_fold_compound_t * c = $(void *cp);
-    vrna_eval_int_loop(c, $(int i), $(int j), $(int k), $(int l));
-  } |]
-  destroyFoldCompound cp
-  return $ fromIntegral e
+-- | Evaluate the free energy contribution of an interior loop with delimiting base pairs (i,j) and (k,l)
+intLoopP :: BS.ByteString -> Int -> Int -> Int -> Int -> Energy
+intLoopP inp i j k l = unsafePerformIO $ do
+  c <- mkFoldCompound inp
+  let !e = intLoopCP c i j k l
+  destroyFoldCompound c
+  return e
 
+-- | Low-level function that assumes a fold compound and returns the interior loop energy between (i,j) and (k,l)
+
+intLoopCP :: Ptr () -> Int -> Int -> Int -> Int -> Energy
+intLoopCP c (fromIntegral -> i) (fromIntegral -> j) (fromIntegral -> k) (fromIntegral -> l) = unsafePerformIO $ do
+  e <- [C.block| int {
+    vrna_fold_compound_t * c = $(void *c);
+    vrna_eval_int_loop (c,$(int i), $(int j), $(int k), $(int l));
+  } |]
+  return $ fromIntegral e

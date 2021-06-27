@@ -46,6 +46,8 @@ extra-source-files:
 
 
 library
+  hs-source-dirs:
+    lib
   exposed-modules:
     -- public interfaces
     BioInf.ViennaRNA.Bindings
@@ -124,6 +126,7 @@ library
     C/ViennaRNA/subopt.c
     C/ViennaRNA/unstructured_domains.c
     C/ViennaRNA/utils.c
+    lib/BioInf/ViennaRNA/Bindings/Inline.c
   cc-options:
     -fPIC -DHAVE_STRDUP
   include-dirs:

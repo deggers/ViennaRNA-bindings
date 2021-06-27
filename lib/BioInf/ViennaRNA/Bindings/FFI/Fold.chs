@@ -59,7 +59,7 @@ ffiEnergyOfStructureTemp t inp struc verb =
     >>= (return . cf2d)
 
 
-foreign import ccall "ffiwrap_fold_temp" fold_temp_p ∷ CBool → CFloat → CString → CString → IO CFloat
+foreign import ccall "ffiwrap_fold_temp" fold_temp_p ∷ CInt → CFloat → CString → CString → IO CFloat
 
 foreign import ccall "ffiwrap_eos_temp" eos_temp_p :: CFloat -> CString -> CString -> CInt -> IO CFloat
 
