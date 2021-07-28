@@ -20,7 +20,10 @@ type Energy = Int
 C.context (C.baseCtx <> C.bsCtx)
 C.include "../C/ViennaRNA/hairpin_loops.h" -- Energy evaluation of hairpin loops for MFE and partition function calculations
 C.include "../C/ViennaRNA/interior_loops.h" -- Energy evaluation of interior loops for MFE and partition function calculations.
+C.include "../C/ViennaRNA/multibranch_loops.h"
 C.include "../C/ViennaRNA/fold.h"
+C.include "../C/ViennaRNA/utils.h" -- Needed for "vrna_alloc"
+C.include "<stdlib.h>"
 
 -- | Create a default fold compound.
 
@@ -36,6 +39,7 @@ mkFoldCompound inp = do
   } |]
   return c
 
+-- c = vrna_fold_compound(seq, NULL, VRNA_OPTION_EVAL_ONLY); TRIED but did neither help
 -- | Destroy a given fold compound.
 
 destroyFoldCompound :: Ptr () -> IO ()
@@ -101,11 +105,38 @@ intLoopP inp i j k l = unsafePerformIO $ do
   return e
 
 -- | Low-level function that assumes a fold compound and returns the interior loop energy between (i,j) and (k,l)
-
 intLoopCP :: Ptr () -> Int -> Int -> Int -> Int -> Energy
 intLoopCP c (fromIntegral -> i) (fromIntegral -> j) (fromIntegral -> k) (fromIntegral -> l) = unsafePerformIO $ do
   e <- [C.block| int {
     vrna_fold_compound_t * c = $(void *c);
     vrna_eval_int_loop (c,$(int i), $(int j), $(int k), $(int l));
+  } |]
+  return $ fromIntegral e
+
+-- | Evaluate Multiloop with closing pair ..
+mbLoopP :: BS.ByteString -> Int -> Int -> Energy
+mbLoopP inp i j = unsafePerformIO $ do
+  c <- mkFoldCompound inp
+--  let !len = BS.length $ BS.copy inp
+  let !e = mbLoopCP c i j
+  destroyFoldCompound c
+  return e
+
+mbLoopCP :: Ptr () -> Int -> Int -> Energy
+mbLoopCP c (fromIntegral -> i) (fromIntegral -> j) = unsafePerformIO $ do
+  e <- [C.block| int {
+    vrna_fold_compound_t * c = $(void *c);
+    vrna_fold_compound_prepare(c, VRNA_OPTION_MFE);
+    int length            =   42;
+    int * dmli1 = (int *) vrna_alloc(sizeof(int)*(length + 1));
+    int * dmli2 = (int *) vrna_alloc(sizeof(int)*(length + 1));
+
+    /* prefill helper arrays */
+    int j;
+    for(j = 0; j <= length; j++){
+      dmli1[j] = dmli2[j] = INF;
+    }
+
+     vrna_E_mb_loop_fast (c, $(int i), $(int j), dmli1, dmli2);
   } |]
   return $ fromIntegral e

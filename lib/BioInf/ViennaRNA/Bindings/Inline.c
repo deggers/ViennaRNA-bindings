@@ -3,7 +3,13 @@
 
 #include "../C/ViennaRNA/interior_loops.h"
 
+#include "../C/ViennaRNA/multibranch_loops.h"
+
 #include "../C/ViennaRNA/fold.h"
+
+#include "../C/ViennaRNA/utils.h"
+
+#include <stdlib.h>
 
 void * inline_c_BioInf_ViennaRNA_Bindings_Inline_0_1e3ca529b6a7f932c3300278b5ce75c869288b45(char * inp_inline_c_0) {
 
@@ -45,6 +51,25 @@ int inline_c_BioInf_ViennaRNA_Bindings_Inline_4_468218ae30e535aae5340e7c4609c531
 
     vrna_fold_compound_t * c = c_inline_c_0;
     vrna_eval_int_loop (c,i_inline_c_1, j_inline_c_2, k_inline_c_3, l_inline_c_4);
+  
+}
+
+
+int inline_c_BioInf_ViennaRNA_Bindings_Inline_5_3fa575edc034700c93e8d87daab73ec38c8fed47(void * c_inline_c_0, int i_inline_c_1, int j_inline_c_2) {
+
+    vrna_fold_compound_t * c = c_inline_c_0;
+    vrna_fold_compound_prepare(c, VRNA_OPTION_MFE);
+    int length            =   42;
+    int * dmli1 = (int *) vrna_alloc(sizeof(int)*(length + 1));
+    int * dmli2 = (int *) vrna_alloc(sizeof(int)*(length + 1));
+
+    
+    int j;
+    for(j = 0; j <= length; j++){
+      dmli1[j] = dmli2[j] = INF;
+    }
+
+     vrna_E_mb_loop_fast (c, i_inline_c_1, j_inline_c_2, dmli1, dmli2);
   
 }
 
