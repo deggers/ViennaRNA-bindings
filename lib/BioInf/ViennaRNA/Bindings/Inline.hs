@@ -30,7 +30,7 @@ C.include "<stdlib.h>"
 mkFoldCompound :: BS.ByteString -> IO (Ptr ())
 mkFoldCompound inp = do
   c <- [C.block| void * {
-    const char * seq = $bs-cstr:inp;
+    const char * seq = $bs-ptr:inp;
     vrna_fold_compound_t * c;
     vrna_md_t md;
     vrna_md_set_default (&md);
@@ -66,7 +66,7 @@ mfe inp = unsafePerformIO $ do
   out <- BI.create (BS.length inp + 1) (\_ -> return ())
   e <- [C.block| float {
     vrna_fold_compound_t * c = $(void *c);
-    vrna_mfe (c, $bs-cstr:out);
+    vrna_mfe (c, $bs-ptr:out);
   } |]
   destroyFoldCompound c
   return (realToFrac e, out)
